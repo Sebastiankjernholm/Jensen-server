@@ -2,25 +2,30 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./config/db');
-const apiRoutes = require('./routes/apiRoutes');
+const dogBreedRoutes = require('./routes/dogBreedRoutes');
 
-dotenv.config(); // Laddar miljövariabler från .env.
+dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Anslut till databasen
 connectDB();
 
 // Middleware
-app.use(cors());              // Aktiverar CORS.
-app.use(express.json());      // Gör att servern kan läsa JSON-data från request body.
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../public')));
+app.use(cors());             
+app.use(express.json());    
 
-// Routes
-app.use('/api/resources', apiRoutes); // Kopplar API-routes till URL-prefixet "/api/resources".
+// Logga inkommande förfrågningar för rutter
+app.use('/api/dogs', (req, res, next) => {
+  console.log('Request to /api/dogs');
+  next();
+});
+
+// API-routes för hundraser
+app.use('/api/dogs', dogBreedRoutes); // Kopplar hundraser-routes till URL-prefixet "/api/dog-breeds"
 
 
-
-// Starta servern
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
