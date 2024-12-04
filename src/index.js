@@ -23,7 +23,7 @@ app.use('/api/dogs', (req, res, next) => {
 });
 
 // API-routes för hundraser
-app.use('/api/dogs', dogBreedRoutes); // Kopplar hundraser-routes till URL-prefixet "/api/dog-breeds"
+app.use('/api/dogs', dogBreedRoutes);
 
 
 app.listen(PORT, () => {

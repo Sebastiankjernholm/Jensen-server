@@ -1,40 +1,61 @@
-let currentDogId = null; 
+let currentDogId = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Hemsidan är redo!');
-  fetchDogs();
   setupAddDogForm();
-  setupDogListToggle();
+  setupDogListToggle();  // Setup för knappen för att visa listan
   setupEditButton();
+  setupDeleteButton();
 });
+
+// Setup för "Alla Hundraser"-knappen
+function setupDogListToggle() {
+  const toggleButton = document.getElementById('toggle-dog-list');
+  const dogsList = document.getElementById('dogs');
+
+  // Se till att listan är gömd från början
+  dogsList.classList.add('hidden'); 
+
+  toggleButton.addEventListener('click', () => {
+    // Kolla om listan är gömd eller inte
+    if (dogsList.classList.contains('hidden')) {
+      fetchDogs(); // Hämta hundraser när användaren klickar
+      dogsList.classList.remove('hidden'); // Visa listan
+    } else {
+      dogsList.classList.add('hidden'); // Dölj listan om den är synlig
+    }
+  });
+}
 
 // Hämta hundraser från backend API
 function fetchDogs() {
-  fetch('/api/dogs')
+  fetch('http://localhost:3000/api/dogs')  // Din backend URL
     .then(response => {
       if (!response.ok) {
         throw new Error('Något gick fel vid hämtning av hundraser');
       }
       return response.json();
     })
-    .then(data => 
-      displayDogs(data))
-    
+    .then(data => {
+      displayDogs(data); // Visa hundraserna i listan
+    })
     .catch(error => console.error('Fel vid hämtning av hundraser:', error));
 }
 
 // Visa hundraserna på sidan
 function displayDogs(dogs) {
   const dogsList = document.getElementById('dogs');
-  dogsList.innerHTML = '';
+  dogsList.innerHTML = ''; // Rensa tidigare data
 
   dogs.forEach(dog => {
     const li = document.createElement('li');
     li.textContent = dog.name;
-    li.addEventListener('click', () => selectDog(dog));
+    li.addEventListener('click', () => selectDog(dog));  // Klicka på hundrasen
+    dogsList.appendChild(li); // Lägg till hundrasen i listan
   });
 }
 
+// Funktion för att välja hundras
 function selectDog(dog) {
   const selectedDogSection = document.getElementById('selected-dog');
   const dogBreed = document.getElementById('dog-breed'); // Här visas rasen
@@ -46,32 +67,16 @@ function selectDog(dog) {
   currentDogId = dog._id;
 
   // Kontrollera att data finns för ras och livslängd
-  if (dog.name) {
-    dogBreed.textContent = dog.name;
-  } else {
-    dogBreed.textContent = 'Okänd ras'; 
-  }
-
-  if (dog.life_span) {
-    dogLifespan.textContent = dog.life_span;
-  } else {
-    dogLifespan.textContent = 'Okänd livslängd';
-  }
-
+  dogBreed.textContent = dog.name || 'Okänd ras';
+  dogLifespan.textContent = dog.life_span || 'Okänd livslängd';
   dogTemperament.textContent = dog.temperament || 'Okänt temperament';
 
-    // Visa bilden
-    if (dog.image) {
-      dogImageElement.src = dog.image; 
-      dogImageElement.alt = dog.name;
-    } else {
-      dogImageElement.src = 'https://via.placeholder.com/150?text=No+Image'; 
-      dogImageElement.alt = 'Ingen bild tillgänglig';
-    }
-  
-   
-    selectedDogSection.classList.remove('hidden');
-    dogsList.classList.add('hidden'); // Döljer listan när en hund är vald
+  // Visa bilden
+  dogImageElement.src = dog.image || 'https://via.placeholder.com/150?text=No+Image'; 
+  dogImageElement.alt = dog.name || 'Ingen bild tillgänglig';
+
+  selectedDogSection.classList.remove('hidden');
+  dogsList.classList.add('hidden'); // Döljer listan när en hund är vald
 }
 
 // Setup för formuläret "Lägg till hund"
@@ -96,7 +101,6 @@ function setupAddDogForm() {
       body: JSON.stringify(newDog),
     })
       .then(response => {
-            
         if (!response.ok) {
           throw new Error('Kunde inte lägga till hund');
         }
@@ -111,16 +115,6 @@ function setupAddDogForm() {
   });
 }
 
-// Funktion för att toggla hundraslistan
-function setupDogListToggle() {
-  const toggleButton = document.getElementById('toggle-dog-list');
-  const dogsList = document.getElementById('dogs');
-
-  toggleButton.addEventListener('click', () => {
-    dogsList.classList.toggle('hidden');
-  });
-}
-
 // Setup för "Edit"-knappen
 function setupEditButton() {
   const editButton = document.getElementById('edit-dog');
@@ -130,31 +124,22 @@ function setupEditButton() {
     const dogTemperament = document.getElementById('dog-temperament');
     const dogLifespan = document.getElementById('dog-lifespan');
     
-    // Om knappen har texten "Edit" så gör fälten redigerbara
     if (editButton.textContent === 'Edit') {
-      // Skapa inputfält för varje värde
       dogBreed.innerHTML = `<input type="text" id="edit-breed" value="${dogBreed.textContent}">`;
       dogTemperament.innerHTML = `<input type="text" id="edit-temperament" value="${dogTemperament.textContent}">`;
       dogLifespan.innerHTML = `<input type="text" id="edit-lifespan" value="${dogLifespan.textContent}">`;
 
-      // Ändra text på knappen till "Save"
       editButton.textContent = 'Save';
     } else {
-      // När knappen är i "Save"-läge, spara ändringarna
       const updatedBreed = document.getElementById('edit-breed').value;
       const updatedTemperament = document.getElementById('edit-temperament').value;
       const updatedLifespan = document.getElementById('edit-lifespan').value;
 
-      // Uppdatera texten på fälten med de nya värdena
       dogBreed.textContent = updatedBreed;
       dogTemperament.textContent = updatedTemperament;
       dogLifespan.textContent = updatedLifespan;
 
-
-      // Skicka PUT-begäran med id och de nya värdena
       saveUpdatedDog(currentDogId, updatedBreed, updatedTemperament, updatedLifespan);
-
-      // Byt tillbaka knappen till "Edit"
       editButton.textContent = 'Edit';
     }
   });
@@ -168,26 +153,16 @@ function saveUpdatedDog(id, breed, temperament, lifespan) {
     life_span: lifespan
   };
 
-  console.log('Skickar PUT-förfrågan med data:', updatedDogData);
-
-  fetch(`/api/dogs/${id}`, { 
+  fetch(`/api/dogs/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(updatedDogData)
   })
-  .then(response => {
-    if (!response.ok) {
-      // Om svaret inte är okej, logga felmeddelande
-      console.error('Fel vid PUT-förfrågan:', response);
-      return Promise.reject('Det gick inte att uppdatera hunden');
-    }
-    return response.json();
-  })
+  .then(response => response.json())
   .then(updatedDog => {
     console.log('Hund uppdaterad:', updatedDog);
-    // Uppdatera UI:t här om nödvändigt
   })
   .catch(error => {
     console.error('Fel vid uppdatering:', error);
@@ -204,20 +179,13 @@ function setupDeleteButton() {
       return;
     }
     
-    // Bekräftelse från användaren
     const confirmDelete = confirm('Är du säker på att du vill ta bort denna hundras?');
     if (!confirmDelete) return;
 
-    // Skicka DELETE-förfrågan till backend
     fetch(`/api/dogs/${currentDogId}`, {
       method: 'DELETE',
     })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Kunde inte ta bort hundras');
-        }
-        return response.json();
-      })
+      .then(response => response.json())
       .then(data => {
         console.log('Hund borttagen:', data);
         alert('Hundras borttagen!');
@@ -226,8 +194,3 @@ function setupDeleteButton() {
       .catch(error => console.error('Fel vid borttagning av hundras:', error));
   });
 }
-
-// Lägg till eventlistener för Delete-knappen
-document.addEventListener('DOMContentLoaded', () => {
-  setupDeleteButton();
-});

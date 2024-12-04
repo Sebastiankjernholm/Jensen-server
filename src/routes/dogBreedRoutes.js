@@ -10,31 +10,31 @@ router.get('/', async (req, res) => {
       // Hämta hundraser från databasen
       const dogBreeds = await DogBreed.find();
 
-      // Kontrollera om det finns några hundraser
       if (!dogBreeds || dogBreeds.length === 0) {
           return res.status(404).json({ message: 'No dog breeds found in the database.' });
       }
 
-       // Hämta bilder från The Dog API
-       const dogApiResponse = await axios.get('https://api.thedogapi.com/v1/breeds');
-       const dogApiData = dogApiResponse.data;
- 
-       // Matcha hundraser från databasen med bilder från The Dog API
-       const enrichedDogBreeds = dogBreeds.map(dog => {
-           const matchingDogApi = dogApiData.find(apiDog => apiDog.name === dog.name);
-           return {
-               ...dog.toObject(),
-               image: dog.image || (matchingDogApi ? matchingDogApi.image.url : 'https://via.placeholder.com/150?text=No+Image')
-           };
-       });
- 
-       // Skicka tillbaka hundraserna
-       res.status(200).json(enrichedDogBreeds);
-   } catch (error) {
-       console.error('Error fetching dog breeds:', error);
-       res.status(500).json({ message: 'Error fetching dog breeds' });
-   }
- });
+      const dogApiResponse = await axios.get('https://api.thedogapi.com/v1/breeds');
+      const dogApiData = dogApiResponse.data;
+
+      const enrichedDogBreeds = dogBreeds.map(dog => {
+          const matchingDogApi = dogApiData.find(apiDog => apiDog.name === dog.name);
+          
+          const imageUrl = matchingDogApi && matchingDogApi.image ? matchingDogApi.image.url : 'https://via.placeholder.com/150?text=No+Image';
+          
+          return {
+              ...dog.toObject(),
+              image: dog.image || imageUrl // Använd fallback-bild om ingen bild finns
+          };
+      });
+
+      // Skicka tillbaka hundraserna
+      res.status(200).json(enrichedDogBreeds);
+  } catch (error) {
+      console.error('Error fetching dog breeds:', error);
+      res.status(500).json({ message: 'Error fetching dog breeds' });
+  }
+});
 
 router.post('/', async (req, res) => {
     try {
@@ -86,6 +86,7 @@ router.delete('/:id', async (req, res) => {
     try {
       const dogBreed = await DogBreed.findByIdAndDelete(req.params.id);
   
+      
       if (!dogBreed) {
         return res.status(404).json({ message: 'Dog breed not found' });
       }
